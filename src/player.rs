@@ -81,7 +81,7 @@ impl Plugin for PlayerPlugin {
 					.after("move_player")
 					.with_system(animate_player)
 					.with_system(move_camera)
-					//.with_system(jump)
+					.with_system(update_health)
 					.with_system(enter_door)
 					.with_system(check_enemy_collision)
 					.into()
@@ -273,6 +273,7 @@ fn enter_door(
 	door: Query<&Transform, With<Door>>,
 	input: Res<Input<KeyCode>>,
 ) {
+	
 	let player_transform = player.single();
 	let door_transform = door.single();
 	if input.just_pressed(KeyCode::W) && collide(player_transform.translation, Vec2::splat(50.), door_transform.translation, Vec2::splat(50.)).is_some() {
@@ -283,17 +284,19 @@ fn enter_door(
 }
 
 fn check_enemy_collision(
-	player: Query<&Transform, With<Player>>,
+	mut player: Query<(&mut Player, &Transform)>,
 	_enemy_sheet: Res<EnemySheet>,
 	enemy: Query<&Transform, With<Enemy>>,
 	
 ) {
-	let player_transform = player.single();
+	
+	let(mut player, player_transform) = player.single_mut();
 	let enemy_transform = enemy.single();
 	if collide(player_transform.translation, Vec2::splat(50.), enemy_transform.translation, Vec2::splat(50.)).is_some() {
 
-		info!("ouch");
-		//let HEALTH = HEALTH - 5;
+		player.health = player.health -1.;
+		info!("Health: {}", player.health);
+
 		//after health changed, update state of health sprite
 	}
 }
@@ -341,23 +344,26 @@ fn spawn_health(
 			},
 			transform: Transform::from_xyz(-(WIN_W/2.) + (TILE_SIZE * 1.55)  , (WIN_H/2.) - (TILE_SIZE * 0.3), 900.),
 			..default()
-		});
+		})
+		.insert(Health);
 
 }
 
 fn update_health(
-	texture_atlases: Res<Assets<TextureAtlas>>,
-	mut health: Query<
-		(
-			&mut TextureAtlasSprite,
-			&Handle<TextureAtlas>,
-		),
-		With<Health>
-	>,
+	//texture_atlases: Res<Assets<TextureAtlas>>,
+	mut health: Query<&mut TextureAtlasSprite, With<Health>>,
+	mut player: Query<&Player>
 ){//not completed
-	let (mut sprite, texture_atlas_handle) = health.single_mut();
-	let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
-	let hs_len : usize = texture_atlas.textures.len() as usize;
-	let c_health : usize = (HEALTH/10.).round() as usize;
-	sprite.index = hs_len - c_health; //Use health to determine the index of the health sprite to show
+	
+	let mut sprite = health.single_mut();
+	let player = player.single_mut();
+	//let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+	//let hs_len : usize = texture_atlas.textures.len() as usize;
+	sprite.index = if player.health != HEALTH{
+		((HEALTH-player.health)/10.0).round() as usize
+	}else{
+		0 as usize
+	}
+	//Use health to determine the index of the health sprite to show
+
 }
