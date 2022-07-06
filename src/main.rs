@@ -58,6 +58,12 @@ enum GameState {
 	Credits,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(StageLabel)]
+enum MyStages {
+	FixedUpdate,
+}
+
 fn main() {
 	App::new()
 		// Setup Bevy and game window
@@ -76,6 +82,7 @@ fn main() {
 			"yinuo-credit r.png", "lrm88-credit-slide_LI.png",
 			 "landin-credits.png", "Grant-Credit.png", "trezza-credit.png"]
 		})
+		
 		.add_plugins(DefaultPlugins)
 		// Set initial state
 		//.add_loopless_state(GameState::MainMenu)
@@ -88,6 +95,13 @@ fn main() {
 			)
 		.add_enter_system(GameState::Credits, despawn_all)
 		.add_system(log_state_change)
+		
+		.add_stage_before(
+            CoreStage::Update,
+            MyStages::FixedUpdate,
+            FixedTimestepStage::from_stage(Duration::from_millis(125), SystemStage::parallel())
+        )
+
 		// Add all subsystems
 		//############### currently greyed out everything but player ######
 		//.add_plugin(AudioPlugin)

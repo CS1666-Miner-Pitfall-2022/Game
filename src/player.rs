@@ -25,14 +25,16 @@ use crate::{
 	enemy::{
 		Enemy,
 		EnemySheet
-	}
+	},
+	MyStages
 };
 
 #[derive(Component)]
 pub struct Player{
 	y_velocity: f32,
 	x_velocity: f32,
-	grounded: bool
+	grounded: bool,
+	y_accel: f32,
 }
 
 #[derive(Component, Deref, DerefMut)]
@@ -70,22 +72,34 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
 	fn build (&self, app: &mut App) {
 		app.add_enter_system(GameState::Loading, load_player_sheet)
-			.add_enter_system(GameState::Playing, spawn_player)
+			.add_enter_system(GameState::Playing, spawn_player.label("spawn_player"))
 			.add_enter_system(GameState::Loading, load_health_sheet)//;//////////////
 			.add_enter_system(GameState::Playing, spawn_health)//;/////////////
-			.add_system(move_player.run_in_state(GameState::Playing).label("move_player"))
+			.add_system(move_player.run_in_state(GameState::Playing))
 			.add_system_set(
 				ConditionSet::new()
 					.run_in_state(GameState::Playing)
-					.after("move_player")
+					.after(
+							"spawn_player")
 					.with_system(animate_player)
 					.with_system(move_camera)
 					//.with_system(jump)
+					
+					.into()
+			)
+			//-i FixedUpdate not found
+			.add_system_set_to_stage( 
+				MyStages::FixedUpdate, 
+				ConditionSet::new()
+					.run_in_state(GameState::Playing)
+					.after(
+							"spawn_player")
 					.with_system(enter_door)
 					.with_system(check_enemy_collision)
 					.into()
 			);
-	}
+		}
+
 }
 
 fn load_player_sheet(
@@ -122,11 +136,11 @@ fn spawn_player(
 		})
 		.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
 		.insert(Velocity::new())
-		.insert(JumpTimer(Timer::from_seconds(JUMP_TIME, false)))
 		.insert(Player{
 			grounded: false,
-			y_velocity: -1.0,
-			x_velocity: 0.
+			y_velocity: 0.,
+			x_velocity: 0.,
+			y_accel: -1.0
 		});
 }
 
