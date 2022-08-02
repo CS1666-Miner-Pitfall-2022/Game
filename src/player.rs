@@ -411,7 +411,7 @@ pub fn check_enemy_collision(
   				if player_health.health <= 0. {
   					//player dies
   					commands.insert_resource(NextState(GameState::GameOver));
-  					commands.entity(player_entity).despawn();
+  					//commands.entity(player_entity).despawn();
   				}
   			}
 	}
